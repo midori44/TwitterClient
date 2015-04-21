@@ -1,0 +1,43 @@
+﻿<Window x:Class="NPBtter.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="480" Width="600" Closing="Window_Closing">
+    <Grid>
+        <Grid>
+            <Button x:Name="startSettingButton" Content="startSetting" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="99" Click="startSettingButton_Click"/>
+            <Label Content="Access here:" HorizontalAlignment="Left" Margin="114,10,0,0" VerticalAlignment="Top" Width="88"/>
+            <TextBox x:Name="pinUritextbox" Height="23" Margin="207,10,10,0" VerticalAlignment="Top"/>
+            <TextBox x:Name="pinTextbox" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Margin="67,48,0,0"/>
+            <Label Content="PIN:" HorizontalAlignment="Left" Margin="10,48,0,0" VerticalAlignment="Top" Width="52"/>
+            <Button x:Name="pinButton" Content="certificate" HorizontalAlignment="Left" Margin="207,47,0,0" VerticalAlignment="Top" Width="89" Click="pinButton_Click"/>
+            <TextBox x:Name="pinResultTextbox" Height="23" Margin="329,48,10,0" Text="pinResultTextbox" VerticalAlignment="Top"/>
+            <Button x:Name="showTimelineButton" Content="showTimeline" HorizontalAlignment="Left" Margin="10,76,0,0" VerticalAlignment="Top" Width="113" Click="showTimelineButton_Click"/>
+
+            <ListBox Name="mainList" Margin="10,100,10,67"
+                     ScrollViewer.VerticalScrollBarVisibility="Visible">
+
+                <!--配置方式(パネル)をカスタマイズ-->
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Vertical" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <!--リストアイテムの表示をカスタマイズ-->
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+
+                        <Grid Width="{Binding width}" Height="Auto" Margin="2">
+                            <Rectangle  Fill="WhiteSmoke" Stroke="Gray" RadiusX="10" RadiusY="10"/>
+                            <Image Source="{Binding DisplayImageUrl}" Width="48" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <TextBlock Text="{Binding DisplayText}" Margin="60,5,5,5" TextWrapping="Wrap"/>
+                        </Grid>
+
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+
+            </ListBox>
+            <Button Content="Button" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="75" Margin="0,0,10,10" Click="Button_Click" />
+        </Grid>
+    </Grid>
+</Window>
