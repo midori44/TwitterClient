@@ -29,68 +29,98 @@ namespace NPBtter
 	public partial class MainWindow : Window
 	{
 		private Tokens tokens;
-		private OAuth.OAuthSession session;
-		private const string APIKEY = "xnjHW56HzizeSeFf7C40sq8Wk";
-		private const string APISECRET = "SDjWmDItipDaveIVBhLrfzs5whGb1cGiEXZ2rD4QxAW9beGlie";
 
-		public TweetSet Tws { get; set; }
-		public double widthValue { get; set; }
+		private TweetSet Tws { get; set; }
+		private TweetSet lTws { get; set; }
+		private TweetSet rTws { get; set; }
+
+		private IDisposable conn;
+		private bool isStreaming = false;
 
 		public MainWindow()
 		{
 			InitializeComponent();
 
+			this.tokens = null;
 			this.Tws = new TweetSet();
-			this.mainList.ItemsSource = this.Tws.Items;
+			Tws.Items.CollectionChanged += (s, e) =>
+			{
+				//var t = new Tweet(Tws.Items[0]);
+				var t = Tws.Items[0];
+				if(t.Text.Length % 2 == 0)
+				{
+					lTws.Set(t);
+				}
+				if(t.Text.Length % 3 == 0)
+				{
+					rTws.Set(t);
+				}
+			};
+			lTws = new TweetSet();
+			rTws = new TweetSet();
 
 			// load twitter token
 			if(!string.IsNullOrEmpty(Properties.Settings.Default.AccessToken)
 				&& !string.IsNullOrEmpty(Properties.Settings.Default.AccessTokenSecret))
 			{
-				tokens = Tokens.Create(
-					APIKEY,
-					APISECRET,
-					Properties.Settings.Default.AccessToken,
-					Properties.Settings.Default.AccessTokenSecret);
+				//tokens = Tokens.Create(
+				//	APIKEY,
+				//	APISECRET,
+				//	Properties.Settings.Default.AccessToken,
+				//	Properties.Settings.Default.AccessTokenSecret);
 
-				foreach(var status in tokens.Statuses.HomeTimeline(count => 10).Reverse())
+				//foreach(var status in tokens.Statuses.HomeTimeline(count => 10).Reverse())
+				//{
+				//	Tws.Set(status);
+				//}
+			}
+
+			if(this.tokens == null)
+			{
+				var optionWindow = new Option();
+				optionWindow.ShowDialog();
+
+				this.tokens = optionWindow.tokens;
+				if(this.tokens == null)
 				{
-					Tws.Set(status);
+					//this.Close();
 				}
 			}
 
+			this.mainList.ItemsSource = this.Tws.Items;
+			this.leftList.ItemsSource = this.lTws.Items;
+			this.rightList.ItemsSource = this.rTws.Items;
 		}
 
-		private void startSettingButton_Click(object sender, RoutedEventArgs e)
-		{
-			session = OAuth.Authorize(APIKEY, APISECRET);
-			this.pinUritextbox.Text = session.AuthorizeUri.ToString();
-			System.Diagnostics.Process.Start(session.AuthorizeUri.ToString());
-		}
 
-		private void pinButton_Click(object sender, RoutedEventArgs e)
-		{
-			tokens = session.GetTokens(pinTextbox.Text);
-			this.pinResultTextbox.Text = tokens.ToString();
-		}
 
 		private void showTimelineButton_Click(object sender, RoutedEventArgs e)
 		{
-			try
+			if(!isStreaming)
 			{
-				var stream = tokens.Streaming.StartObservableStream(StreamingType.User).Publish();
-				stream.OfType<StatusMessage>()
-					.Select(m => m.Status)
-					.ObserveOn(SynchronizationContext.Current)
-					.Subscribe(status => Tws.Set(status));
+				try
+				{
+					var stream = this.tokens.Streaming.StartObservableStream(StreamingType.User).Publish();
+					stream.OfType<StatusMessage>()
+						.Select(message => message.Status)
+						.ObserveOn(SynchronizationContext.Current)
+						.Subscribe(status => this.Tws.Set(status));
 
-				var disposable = stream.Connect();
+					this.conn = stream.Connect();
+					this.isStreaming = true;
+				}
+				catch(Exception ex)
+				{
+					Console.WriteLine(ex.Message);
+				}
 			}
-			catch(Exception ex)
+			else
 			{
-				Console.WriteLine(ex.Message);
+				this.conn.Dispose();
+				this.isStreaming = false;
 			}
 
+			this.showTimelineButton.Content = (isStreaming) ? "StopTimeline" : "StartTimeline";
 		}
 
 		
@@ -98,38 +128,15 @@ namespace NPBtter
 
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
-			
-		}
-
-		private void mainList_SizeChanged(object sender, SizeChangedEventArgs e)
-		{
-			//ScrollViewer itemsViewer = (ScrollViewer)FindControl(mainList, typeof(ScrollViewer));
-			//WrapPanel itemsPanel = (WrapPanel)FindControl(mainList, typeof(WrapPanel));
-			//if(itemsPanel != null)
-			//{
-			//	itemsPanel.Width = itemsViewer.ActualWidth;
-			//}
-		}
-		private DependencyObject FindControl(DependencyObject obj, Type controlType)
-		{
-			if(obj == null)
-				return null;
-			if(obj.GetType() == controlType)
-				return obj;
-
-			int childrenCount = VisualTreeHelper.GetChildrenCount(obj);
-			for(int i = 0; i < childrenCount; i++)
+			Tws.Items.Insert(0, new Tweet()
 			{
-				DependencyObject child = VisualTreeHelper.GetChild(obj, i);
-				DependencyObject descendant = FindControl(child, controlType);
-				if(descendant != null && descendant.GetType() == controlType)
-				{
-					return descendant;
-				}
-			}
-
-			return null;
+				Name = "name",
+				Text = new String('A', DateTime.Now.Millisecond % 140),
+				CreatedAt = DateTime.Now
+			});
 		}
+
+		
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
@@ -152,57 +159,71 @@ namespace NPBtter
 		{
 			this.Items = new ObservableCollection<Tweet>();
 		}
+
 		public void Set(Status status)
 		{
 			this.Items.Insert(0, new Tweet(status));
+		}
+		public void Set(Tweet tweet)
+		{
+			this.Items.Insert(0, tweet);
 		}
 	}
 
 	public class Tweet
 	{
-		private Status _status;
+		public long Id { get; set; }
+		public string Name { get; set; }
+		public string ScreenName { get; set; }
+		public long? RtId { get; set; }
+		public string RtName { get; set; }
+		public string RtScreenName { get; set; }
+		public string Text { get; set; }
+		public DateTimeOffset CreatedAt { get; set; }
+		public Uri ProfileImageUrl { get; set; }
 
-		public string Name { get { return _status.User.Name; } }
-		public string ScreenName { get { return _status.User.ScreenName; } }
-		public string Text { get { return _status.Text; } }
-		public DateTime LocalDateTime { get { return _status.CreatedAt.LocalDateTime; } }
-		public Uri ProfileImageUrl { get { return _status.User.ProfileImageUrl; } }
-		public User ReUser { get { return (_status.RetweetedStatus != null) ? _status.RetweetedStatus.User : null; } }
-		public double width { get; set; }
-
-		public Uri DisplayImageUrl
-		{
-			get
-			{
-				return (ReUser == null)
-					? ProfileImageUrl
-					: ReUser.ProfileImageUrl;
-			}
-		}
 		public string DisplayText
 		{
 			get
 			{
-				return (ReUser == null)
-					? Name + " / @" + ScreenName + "\n" + Text + "\n" + LocalDateTime
-					: ReUser.Name + " / @" + ReUser.ScreenName + " (RT:@" + ScreenName + ")" + "\n"
-						+ _status.RetweetedStatus.Text + "\n" + _status.RetweetedStatus.CreatedAt.LocalDateTime;
+				return Name + " / @" + ScreenName + "\n" + Text + "\n" + CreatedAt;
 			}
 		}
 
+
+		public Tweet()
+		{
+		}
 		public Tweet(Status status)
 		{
-			_status = status;
+			if(status.RetweetedStatus == null)
+			{
+				Id = status.Id;
+				Name = status.User.Name;
+				ScreenName = status.User.ScreenName;
+				RtId = null;
+				RtName = null;
+				RtScreenName = null;
+				Text = status.Text;
+				CreatedAt = status.CreatedAt;
+				ProfileImageUrl = status.User.ProfileImageUrl;
+			}
+			else
+			{
+				var rt = status.RetweetedStatus;
 
-			//Name = status.User.Name;
-			//ScreenName = status.User.ScreenName;
-			//Text = status.Text;
-			//LocalDateTime = status.CreatedAt.LocalDateTime;
-			//ProfileImageUrl = status.User.ProfileImageUrl;
-			//IsRetweeted = status.IsRetweeted;
-			//ReUser = (status.RetweetedStatus != null) ? status.RetweetedStatus.User : null;
-			width = 500;
+				Id = rt.Id;
+				Name = rt.User.Name;
+				ScreenName = rt.User.ScreenName;
+				RtId = status.Id;
+				RtName = status.User.Name;
+				RtScreenName = status.User.ScreenName;
+				Text = rt.Text;
+				CreatedAt = rt.CreatedAt;
+				ProfileImageUrl = rt.User.ProfileImageUrl;
+			}
 			
 		}
+		
 	}
 }
