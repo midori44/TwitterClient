@@ -63,16 +63,16 @@ namespace NPBtter
 			if(!string.IsNullOrEmpty(Properties.Settings.Default.AccessToken)
 				&& !string.IsNullOrEmpty(Properties.Settings.Default.AccessTokenSecret))
 			{
-				//tokens = Tokens.Create(
-				//	APIKEY,
-				//	APISECRET,
-				//	Properties.Settings.Default.AccessToken,
-				//	Properties.Settings.Default.AccessTokenSecret);
+				tokens = Tokens.Create(
+					Properties.Resources.APIKEY,
+					Properties.Resources.APISECRET,
+					Properties.Settings.Default.AccessToken,
+					Properties.Settings.Default.AccessTokenSecret);
 
-				//foreach(var status in tokens.Statuses.HomeTimeline(count => 10).Reverse())
-				//{
-				//	Tws.Set(status);
-				//}
+				foreach(var status in tokens.Statuses.HomeTimeline(count => 10).Reverse())
+				{
+					Tws.Set(status);
+				}
 			}
 
 			if(this.tokens == null)
@@ -83,7 +83,7 @@ namespace NPBtter
 				this.tokens = optionWindow.tokens;
 				if(this.tokens == null)
 				{
-					//this.Close();
+					this.Close();
 				}
 			}
 
@@ -94,34 +94,7 @@ namespace NPBtter
 
 
 
-		private void showTimelineButton_Click(object sender, RoutedEventArgs e)
-		{
-			if(!isStreaming)
-			{
-				try
-				{
-					var stream = this.tokens.Streaming.StartObservableStream(StreamingType.User).Publish();
-					stream.OfType<StatusMessage>()
-						.Select(message => message.Status)
-						.ObserveOn(SynchronizationContext.Current)
-						.Subscribe(status => this.Tws.Set(status));
-
-					this.conn = stream.Connect();
-					this.isStreaming = true;
-				}
-				catch(Exception ex)
-				{
-					Console.WriteLine(ex.Message);
-				}
-			}
-			else
-			{
-				this.conn.Dispose();
-				this.isStreaming = false;
-			}
-
-			this.showTimelineButton.Content = (isStreaming) ? "StopTimeline" : "StartTimeline";
-		}
+		
 
 		
 
@@ -148,6 +121,51 @@ namespace NPBtter
 			}
 		}
 
+		private void startMenu_Click(object sender, RoutedEventArgs e)
+		{
+			if(!isStreaming)
+			{
+				try
+				{
+					var stream = this.tokens.Streaming.StartObservableStream(StreamingType.User).Publish();
+					stream.OfType<StatusMessage>()
+						.Select(message => message.Status)
+						.ObserveOn(SynchronizationContext.Current)
+						.Subscribe(status => this.Tws.Set(status));
+
+					this.conn = stream.Connect();
+					this.isStreaming = true;
+				}
+				catch(Exception ex)
+				{
+					Console.WriteLine(ex.Message);
+				}
+			}
+			else
+			{
+				this.conn.Dispose();
+				this.isStreaming = false;
+			}
+
+			this.startMenu.Header = (isStreaming) ? "Stop" : "Start";
+		}
+
+		private void viewMenu_Click(object sender, RoutedEventArgs e)
+		{
+			if(this.mainColumn.Width == new GridLength(0))
+			{
+				this.mainList.Visibility = System.Windows.Visibility.Visible;
+				this.mainColumn.Width = new GridLength(1,GridUnitType.Star);
+				this.viewMenu.Header = "3 Columns";
+			}
+			else
+			{
+				this.mainList.Visibility = System.Windows.Visibility.Hidden;
+				this.mainColumn.Width = new GridLength(0);
+				this.viewMenu.Header = "2 Columns";
+			}
+		}
+
 	}
 
 
@@ -155,6 +173,7 @@ namespace NPBtter
 	public class TweetSet
 	{
 		public ObservableCollection<Tweet> Items { get; private set; }
+
 		public TweetSet()
 		{
 			this.Items = new ObservableCollection<Tweet>();
@@ -167,6 +186,26 @@ namespace NPBtter
 		public void Set(Tweet tweet)
 		{
 			this.Items.Insert(0, tweet);
+		}
+	}
+
+	public class MainTweetSet : TweetSet
+	{
+		public List<SubTweetSet> SubSets { get; private set; }
+
+		public MainTweetSet()
+		{
+			SubSets = new List<SubTweetSet>();
+		}
+	}
+
+	public class SubTweetSet : TweetSet
+	{
+		public List<string> NameList { get; set; }
+
+		public SubTweetSet()
+		{
+			NameList = new List<string>();
 		}
 	}
 

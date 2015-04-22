@@ -22,8 +22,6 @@ namespace NPBtter
 	{
 		public Tokens tokens { get; private set; }
 		private OAuth.OAuthSession session;
-		private const string APIKEY = "xnjHW56HzizeSeFf7C40sq8Wk";
-		private const string APISECRET = "SDjWmDItipDaveIVBhLrfzs5whGb1cGiEXZ2rD4QxAW9beGlie";
 
 		public Option()
 		{
@@ -32,7 +30,7 @@ namespace NPBtter
 
 		private void startSettingButton_Click(object sender, RoutedEventArgs e)
 		{
-			session = OAuth.Authorize(APIKEY, APISECRET);
+			session = OAuth.Authorize(Properties.Resources.APIKEY, Properties.Resources.APISECRET);
 			System.Diagnostics.Process.Start(session.AuthorizeUri.ToString());
 		}
 
