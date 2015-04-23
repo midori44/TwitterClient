@@ -1,7 +1,7 @@
 ﻿<Window x:Class="NPBtter.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="480" Width="640" Closing="Window_Closing" MinWidth="640">
+        Title="MainWindow" Height="480" Width="640" Closing="Window_Closing" MinWidth="0">
     <Window.Resources>
 
         <ItemsPanelTemplate x:Key="listPanelTemplate">
@@ -28,27 +28,39 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" Name="mainColumn"/>
                 <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*" Name="rightColumn"/>
             </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
+            <Grid Grid.Column="0" Name="mainGrid">
                 <ListBox Name="mainList" Margin="10,39,10,34"
                      HorizontalContentAlignment="Stretch"
                      ScrollViewer.VerticalScrollBarVisibility="Visible"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ItemsPanel="{StaticResource listPanelTemplate}"
-                     ItemTemplate="{StaticResource listDataTemplate}"/>
+                     ItemTemplate="{StaticResource listDataTemplate}">
+                
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="listBoxItem_PreviewMouseLeftButtonDown"/>
+                            <EventSetter Event="PreviewMouseMove" Handler="listBoxItem_PreviewMouseMove"/>
+                            <EventSetter Event="QueryContinueDrag" Handler="listBoxItem_QueryContinueDrag"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    
+                </ListBox>
 
             </Grid>
-            <Grid Grid.Column="1">
+            <Grid Grid.Column="1" Name="leftGrid">
                 <ComboBox Margin="10,10,10,0" VerticalAlignment="Top"/>
                 <ListBox Name="leftList" Margin="10,39,10,34"
                      HorizontalContentAlignment="Stretch"
                      ScrollViewer.VerticalScrollBarVisibility="Visible"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ItemsPanel="{StaticResource listPanelTemplate}"
-                     ItemTemplate="{StaticResource listDataTemplate}"/>
+                     ItemTemplate="{StaticResource listDataTemplate}"
+                     AllowDrop="True" Drop="listBox_Drop"/>
+                
             </Grid>
-            <Grid Grid.Column="2">
+            <Grid Grid.Column="2" Name="rigthGrid">
                 <ComboBox Margin="10,10,10,0" VerticalAlignment="Top"/>
                 <ListBox Name="rightList" Margin="10,39,10,34"
                      HorizontalContentAlignment="Stretch"
