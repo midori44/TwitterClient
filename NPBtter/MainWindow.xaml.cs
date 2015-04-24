@@ -22,6 +22,7 @@ using CoreTweet.Streaming.Reactive;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
+using System.ComponentModel;
 
 namespace NPBtter
 {
@@ -31,11 +32,7 @@ namespace NPBtter
 	public partial class MainWindow : Window
 	{
 		private Tokens tokens;
-
-		private TweetSet Tws { get; set; }
-		private TweetSet lTws { get; set; }
-		private TweetSet rTws { get; set; }
-
+		private MainTweetList Tws;
 		private IDisposable conn;
 		private bool isStreaming = false;
 
@@ -44,22 +41,9 @@ namespace NPBtter
 			InitializeComponent();
 
 			this.tokens = null;
-			this.Tws = new TweetSet();
-			Tws.Items.CollectionChanged += (s, e) =>
-			{
-				//var t = new Tweet(Tws.Items[0]);
-				var t = Tws.Items[0];
-				if(t.Text.Length % 2 == 0)
-				{
-					lTws.Set(t);
-				}
-				if(t.Text.Length % 3 == 0)
-				{
-					rTws.Set(t);
-				}
-			};
-			lTws = new TweetSet();
-			rTws = new TweetSet();
+			this.Tws = new MainTweetList();
+			this.Tws.SubLists.Add(new SubTweetList() { Title = "list1" });
+			this.Tws.SubLists.Add(new SubTweetList() { Title = "list2" });
 
 			// load twitter token
 			if(!string.IsNullOrEmpty(Properties.Settings.Default.AccessToken)
@@ -90,10 +74,31 @@ namespace NPBtter
 			}
 
 			this.mainList.ItemsSource = this.Tws.Items;
-			this.leftList.ItemsSource = this.lTws.Items;
-			this.rightList.ItemsSource = this.rTws.Items;
+			this.leftComboBox.ItemsSource = this.Tws.SubLists;
+			this.rightComboBox.ItemsSource = this.Tws.SubLists;
 
-			
+
+			for(int i = 0; i < 5; i++)
+			{
+				Tws.SubLists[i % 2].FilterEntry("name" + i);
+			}
+
+			Action func = async () =>
+			{
+				for(int i = 0; i < 100; i++)
+				{
+					await Task.Run(() => System.Threading.Thread.Sleep(951));
+					Tws.Add(new Tweet()
+					{
+						Name = "Name",
+						ScreenName = "name" + DateTime.Now.Millisecond % 10,
+						Text = new String('A', DateTime.Now.Millisecond % 140),
+						CreatedAt = DateTime.Now
+					});
+				}
+			};
+
+			func();
 		}
 
 
@@ -105,9 +110,10 @@ namespace NPBtter
 
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
-			Tws.Items.Insert(0, new Tweet()
+			Tws.Add(new Tweet()
 			{
-				Name = "name",
+				Name = "Name",
+				ScreenName = "name" + DateTime.Now.Millisecond % 10,
 				Text = new String('A', DateTime.Now.Millisecond % 140),
 				CreatedAt = DateTime.Now
 			});
@@ -135,7 +141,7 @@ namespace NPBtter
 					stream.OfType<StatusMessage>()
 						.Select(message => message.Status)
 						.ObserveOn(SynchronizationContext.Current)
-						.Subscribe(status => this.Tws.Set(status));
+						.Subscribe(status => this.Tws.Receive(status));
 
 					this.conn = stream.Connect();
 					this.isStreaming = true;
@@ -189,8 +195,6 @@ namespace NPBtter
 			dragItem = sender as ListBoxItem;
 			// マウスダウン時の座標を取得
 			dragStartPos = e.GetPosition(dragItem);
-
-			var t = dragItem.Content as Tweet;
 		}
 		private void listBoxItem_PreviewMouseMove(object sender, MouseEventArgs e)
 		{
@@ -225,33 +229,49 @@ namespace NPBtter
 				dragGhost.TopOffset = p.Y - loc.Y;
 			}
 		}
-		private void listBox_Drop(object sender, DragEventArgs e)
+		private void leftListBox_Drop(object sender, DragEventArgs e)
 		{
-			var lbi = e.Data.GetData(typeof(ListBoxItem)) as ListBoxItem;
-			var t = lbi.Content as Tweet;
+			int index = this.leftComboBox.SelectedIndex;
+			if(index > -1)
+			{
+				var item = e.Data.GetData(typeof(ListBoxItem)) as ListBoxItem;
+				var tw = item.Content as Tweet;
 
-			this.lTws.Set(t);
-
-
-			//var dropPos = e.GetPosition(mainList);
-			//var lbi = e.Data.GetData(typeof(ListBoxItem)) as ListBoxItem;
-			//var o = lbi.DataContext as MyClass;
-			//var index = MyClasses.IndexOf(o);
-			//for(int i = 0; i < MyClasses.Count; i++)
-			//{
-			//	var item = mainList.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
-			//	var pos = mainList.PointFromScreen(item.PointToScreen(new Point(0, item.ActualHeight / 2)));
-			//	if(dropPos.Y < pos.Y)
-			//	{
-			//		// i が入れ換え先のインデックス
-			//		MyClasses.Move(index, (index < i) ? i - 1 : i);
-			//		return;
-			//	}
-			//}
-			//// 最後にもっていく
-			//int last = MyClasses.Count - 1;
-			//MyClasses.Move(index, last);
+				this.Tws.SubLists[index].Entry(tw);
+			}
 		}
+		private void rightListBox_Drop(object sender, DragEventArgs e)
+		{
+			int index = this.rightComboBox.SelectedIndex;
+			if(index > -1)
+			{
+				var item = e.Data.GetData(typeof(ListBoxItem)) as ListBoxItem;
+				var tw = item.Content as Tweet;
+
+				this.Tws.SubLists[index].Entry(tw);
+			}
+		}
+
+
+		private void leftComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			int index = (sender as ComboBox).SelectedIndex;
+			if(index > -1)
+			{
+				this.leftListBox.ItemsSource = this.Tws.SubLists[index].Items;
+			}
+		}
+
+		private void rightComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			int index = (sender as ComboBox).SelectedIndex;
+			if(index > -1)
+			{
+				this.rightListBox.ItemsSource = this.Tws.SubLists[index].Items;
+			}
+		}
+
+		
 
 
 
@@ -378,42 +398,122 @@ namespace NPBtter
 	}
 
 
-	public class TweetSet
+	public class TweetList
 	{
 		public ObservableCollection<Tweet> Items { get; private set; }
 
-		public TweetSet()
+		public TweetList()
 		{
-			this.Items = new ObservableCollection<Tweet>();
+			Items = new ObservableCollection<Tweet>();
 		}
 
-		public void Set(Status status)
+		virtual public void Add(Tweet tweet)
 		{
-			this.Items.Insert(0, new Tweet(status));
+			if(Items.Count > 10)
+			{
+				Items.Remove(Items.Last());
+			}
+
+			Items.Insert(0, tweet);
 		}
-		public void Set(Tweet tweet)
+
+	}
+
+	public class MainTweetList : TweetList
+	{
+		public ObservableCollection<SubTweetList> SubLists { get; private set; }
+
+		public MainTweetList()
 		{
-			this.Items.Insert(0, tweet);
+			SubLists = new ObservableCollection<SubTweetList>();
+		}
+
+		public void Receive(Status status)
+		{
+			Add(new Tweet(status));
+		}
+
+		override public void Add(Tweet tweet)
+		{
+			base.Add(tweet);
+
+			foreach(var subList in SubLists.Where(x => x.MatchFilter(tweet.ScreenName)))
+			{
+				subList.Add(tweet);
+			}
 		}
 	}
 
-	public class MainTweetSet : TweetSet
+	public class SubTweetList : TweetList, INotifyPropertyChanged
 	{
-		public List<SubTweetSet> SubSets { get; private set; }
+		private string _Title;
+		private Dictionary<string, bool> _NameFilter;
 
-		public MainTweetSet()
+		public string Title
 		{
-			SubSets = new List<SubTweetSet>();
+			get { return _Title; }
+			set { _Title = value; OnPropertyChanged("DisplayTitle"); }
 		}
-	}
 
-	public class SubTweetSet : TweetSet
-	{
-		public List<string> NameList { get; set; }
-
-		public SubTweetSet()
+		public string DisplayTitle
 		{
-			NameList = new List<string>();
+			get { return _Title + " (" + _NameFilter.Count() + ")"; }
+		}
+
+
+		public SubTweetList()
+		{
+			_NameFilter = new Dictionary<string, bool>();
+		}
+		public SubTweetList(string title, IEnumerable<string> filter)
+		{
+			_Title = title;
+			_NameFilter = new Dictionary<string, bool>();
+			foreach(var name in filter)
+			{
+				_NameFilter.Add(name, true);
+			}
+		}
+
+		public bool MatchFilter(string screenName)
+		{
+			return _NameFilter.ContainsKey(screenName) && _NameFilter[screenName] == true;
+		}
+
+		public void Entry(Tweet tweet)
+		{
+			base.Add(tweet);
+
+			FilterEntry(tweet.ScreenName);
+		}
+
+		public void FilterEntry(string screenName)
+		{
+			_NameFilter[screenName] = true;
+			OnPropertyChanged("DisplayTitle");
+		}
+
+		public void FilterRemove(string screenName)
+		{
+			_NameFilter.Remove(screenName);
+			OnPropertyChanged("DisplayTitle");
+		}
+
+		public void FilterExclude(string screenName)
+		{
+			_NameFilter[screenName] = false;
+		}
+
+
+		// INotifyPropertyChangedの実装
+		public event PropertyChangedEventHandler PropertyChanged;
+		protected virtual void OnPropertyChanged(PropertyChangedEventArgs e)
+		{
+			if(PropertyChanged != null) PropertyChanged(this, e);
+		}
+		protected virtual void OnPropertyChanged(string name)
+		{
+			if(PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(name));
 		}
 	}
 

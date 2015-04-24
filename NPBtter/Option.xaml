@@ -4,7 +4,7 @@
         Title="Option" Height="240" Width="300">
     <Grid>
         <Button x:Name="startSettingButton" Content="startSetting" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="100" Click="startSettingButton_Click"/>
-        <GroupBox Header="GroupBox" Margin="20,50,20,0" VerticalAlignment="Top" Height="105">
+        <GroupBox Header="Authorize" Margin="20,50,20,0" VerticalAlignment="Top" Height="105">
             <Grid>
                 <Label Content="PIN:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="52"/>
                 <TextBox x:Name="pinTextbox" TextWrapping="Wrap" Margin="67,12,10,0" VerticalAlignment="Top"/>

@@ -1,7 +1,7 @@
 ﻿<Window x:Class="NPBtter.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="480" Width="640" Closing="Window_Closing" MinWidth="0">
+        Title="MainWindow" Height="480" Width="640" Closing="Window_Closing" MinWidth="480">
     <Window.Resources>
 
         <ItemsPanelTemplate x:Key="listPanelTemplate">
@@ -11,8 +11,20 @@
         <DataTemplate x:Key="listDataTemplate">
             <Grid Height="Auto" Margin="2">
                 <Rectangle Fill="WhiteSmoke" Stroke="Gray" RadiusX="10" RadiusY="10"/>
-                <Image Source="{Binding ProfileImageUrl}" Width="48" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                <!--<Image Source="{Binding ProfileImageUrl}" Width="48" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Left" />-->
                 <TextBlock Text="{Binding DisplayText}" Margin="60,5,5,5" TextWrapping="Wrap"/>
+
+                <Grid.Triggers>
+                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                    From="0" To="1"  Duration="0:0:0.300" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Grid.Triggers>
+                
             </Grid>
         </DataTemplate>
 
@@ -50,24 +62,25 @@
 
             </Grid>
             <Grid Grid.Column="1" Name="leftGrid">
-                <ComboBox Margin="10,10,10,0" VerticalAlignment="Top"/>
-                <ListBox Name="leftList" Margin="10,39,10,34"
+                <ComboBox Name="leftComboBox" DisplayMemberPath="DisplayTitle" Margin="10,10,10,0" VerticalAlignment="Top" SelectionChanged="leftComboBox_SelectionChanged"/>
+                <ListBox Name="leftListBox" Margin="10,39,10,34"
                      HorizontalContentAlignment="Stretch"
                      ScrollViewer.VerticalScrollBarVisibility="Visible"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ItemsPanel="{StaticResource listPanelTemplate}"
                      ItemTemplate="{StaticResource listDataTemplate}"
-                     AllowDrop="True" Drop="listBox_Drop"/>
+                     AllowDrop="True" Drop="leftListBox_Drop" />
                 
             </Grid>
             <Grid Grid.Column="2" Name="rigthGrid">
-                <ComboBox Margin="10,10,10,0" VerticalAlignment="Top"/>
-                <ListBox Name="rightList" Margin="10,39,10,34"
+                <ComboBox Name="rightComboBox" DisplayMemberPath="DisplayTitle" Margin="10,10,10,0" VerticalAlignment="Top" SelectionChanged="rightComboBox_SelectionChanged"/>
+                <ListBox Name="rightListBox" Margin="10,39,10,34"
                      HorizontalContentAlignment="Stretch"
                      ScrollViewer.VerticalScrollBarVisibility="Visible"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ItemsPanel="{StaticResource listPanelTemplate}"
-                     ItemTemplate="{StaticResource listDataTemplate}"/>
+                     ItemTemplate="{StaticResource listDataTemplate}"
+                     AllowDrop="True" Drop="rightListBox_Drop" />
                 <Button Content="Button" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="75" Margin="0,0,10,10" Click="Button_Click" />
             </Grid>
         </Grid>
