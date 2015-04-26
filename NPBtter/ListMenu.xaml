@@ -1,0 +1,35 @@
+﻿<Window x:Class="NPBtter.ListMenu"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="振り分けリスト設定" Height="360" Width="500" WindowStyle="ToolWindow" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
+    <Grid>
+        <GroupBox Header="リスト一覧" HorizontalAlignment="Left" Margin="10,10,0,37" Width="254">
+            <Grid>
+                <ListBox Name="groupListBox" DisplayMemberPath="DisplayTitle" Margin="10,10,11,58" SelectionChanged="groupListBox_SelectionChanged"/>
+                <Button Name="groupUpButton" Content="▲" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="20" Margin="185,0,0,34" Click="groupUpButton_Click"/>
+                <Button Name="groupDoenButton" Content="▼" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="20" Margin="210,0,0,34" Click="groupDoenButton_Click"/>
+                <Button Name="groupAddButton" Content="新規作成" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="70" Margin="10,0,0,10" Click="groupAddButton_Click"/>
+                <Button Name="groupEditButton" Content="名前変更" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="70" Margin="85,0,0,10" Click="groupEditButton_Click"/>
+                <Button Name="groupRemoveButton" Content="削除" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="70" Margin="160,0,0,10" Click="groupRemoveButton_Click"/>
+
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="振り分けID" Margin="269,10,10,37">
+            <Grid>
+                <ListBox Name="filterListBox" Margin="10,10,10,58">
+                    <ListBox.Resources>
+                        <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Gray" />
+                    </ListBox.Resources>
+                    
+                </ListBox>
+                <Button Name="filterAddButton" Content="新規作成" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Margin="0,0,85,34"/>
+                <Button Name="filterMuteButton" Content="ミュート/解除" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Margin="0,0,10,34"/>
+                <Button Name="filterEditButton" Content="ID変更" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Margin="0,0,85,10"/>
+                <Button Name="filterRemoveButton" Content="削除" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Margin="0,0,10,10" Click="filterRemoveButton_Click"/>
+
+            </Grid>
+        </GroupBox>
+        <Button Name="exitButton" Content="閉じる" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="exitButton_Click"/>
+
+    </Grid>
+</Window>

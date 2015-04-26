@@ -1,17 +1,16 @@
 ﻿<Window x:Class="NPBtter.Option"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Option" Height="240" Width="300">
+        Title="Option" Height="200" Width="300">
     <Grid>
-        <Button x:Name="startSettingButton" Content="startSetting" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="100" Click="startSettingButton_Click"/>
-        <GroupBox Header="Authorize" Margin="20,50,20,0" VerticalAlignment="Top" Height="105">
+        <Button x:Name="startSettingButton" Content="認証開始" Margin="56,10,56,0" VerticalAlignment="Top" Width="180" Click="startSettingButton_Click" Height="35" HorizontalAlignment="Center"/>
+        <GroupBox Header="PIN入力" Margin="20,56,20,0" VerticalAlignment="Top" Height="71">
             <Grid>
-                <Label Content="PIN:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="52"/>
-                <TextBox x:Name="pinTextbox" TextWrapping="Wrap" Margin="67,12,10,0" VerticalAlignment="Top"/>
-                <Button x:Name="pinButton" Content="certificate" HorizontalAlignment="Right" Margin="0,45,10,0" VerticalAlignment="Top" Width="89" Click="pinButton_Click"/>
+                <TextBox x:Name="pinTextbox" TextWrapping="Wrap" Margin="10,10,75,0" VerticalAlignment="Top"/>
+                <Button x:Name="pinButton" Content="認証" HorizontalAlignment="Right" Margin="0,10,10,0" VerticalAlignment="Top" Width="60" Click="pinButton_Click"/>
             </Grid>
         </GroupBox>
-        <Button x:Name="closeButton" Content="Close" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="closeButton_Click"/>
+        <Button x:Name="closeButton" Content="閉じる" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Click="closeButton_Click"/>
 
     </Grid>
 </Window>

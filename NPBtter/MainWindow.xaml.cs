@@ -23,6 +23,8 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.ComponentModel;
+using System.Xml.Serialization;
+using System.IO;
 
 namespace NPBtter
 {
@@ -32,7 +34,7 @@ namespace NPBtter
 	public partial class MainWindow : Window
 	{
 		private Tokens tokens;
-		private MainTweetList Tws;
+		private MainTweetList TweetList;
 		private IDisposable conn;
 		private bool isStreaming = false;
 
@@ -41,24 +43,24 @@ namespace NPBtter
 			InitializeComponent();
 
 			this.tokens = null;
-			this.Tws = new MainTweetList();
-			this.Tws.SubLists.Add(new SubTweetList() { Title = "list1" });
-			this.Tws.SubLists.Add(new SubTweetList() { Title = "list2" });
+			this.TweetList = new MainTweetList();
+			this.TweetList.SubLists.Add(new SubTweetList() { Title = "list1" });
+			this.TweetList.SubLists.Add(new SubTweetList() { Title = "list2" });
 
 			// load twitter token
 			if(!string.IsNullOrEmpty(Properties.Settings.Default.AccessToken)
 				&& !string.IsNullOrEmpty(Properties.Settings.Default.AccessTokenSecret))
 			{
-				//tokens = Tokens.Create(
-				//	Properties.Resources.APIKEY,
-				//	Properties.Resources.APISECRET,
-				//	Properties.Settings.Default.AccessToken,
-				//	Properties.Settings.Default.AccessTokenSecret);
+				tokens = Tokens.Create(
+					Properties.Resources.APIKEY,
+					Properties.Resources.APISECRET,
+					Properties.Settings.Default.AccessToken,
+					Properties.Settings.Default.AccessTokenSecret);
 
-				//foreach(var status in tokens.Statuses.HomeTimeline(count => 10).Reverse())
-				//{
-				//	Tws.Set(status);
-				//}
+				foreach(var status in tokens.Statuses.HomeTimeline(count => 10).Reverse())
+				{
+					TweetList.Receive(status);
+				}
 			}
 
 			if(this.tokens == null)
@@ -69,57 +71,37 @@ namespace NPBtter
 				this.tokens = optionWindow.tokens;
 				if(this.tokens == null)
 				{
-					//this.Close();
+					this.Close();
 				}
 			}
 
-			this.mainList.ItemsSource = this.Tws.Items;
-			this.leftComboBox.ItemsSource = this.Tws.SubLists;
-			this.rightComboBox.ItemsSource = this.Tws.SubLists;
+			this.mainList.ItemsSource = this.TweetList.Items;
+			this.leftComboBox.ItemsSource = this.TweetList.SubLists;
+			this.rightComboBox.ItemsSource = this.TweetList.SubLists;
 
 
-			for(int i = 0; i < 5; i++)
-			{
-				Tws.SubLists[i % 2].FilterEntry("name" + i);
-			}
+			//for(int i = 0; i < 5; i++)
+			//{
+			//	Tws.SubLists[i % 2].FilterEntry("name" + i);
+			//}
 
-			Action func = async () =>
-			{
-				for(int i = 0; i < 100; i++)
-				{
-					await Task.Run(() => System.Threading.Thread.Sleep(951));
-					Tws.Add(new Tweet()
-					{
-						Name = "Name",
-						ScreenName = "name" + DateTime.Now.Millisecond % 10,
-						Text = new String('A', DateTime.Now.Millisecond % 140),
-						CreatedAt = DateTime.Now
-					});
-				}
-			};
+			//Action func = async () =>
+			//{
+			//	for(int i = 0; i < 100; i++)
+			//	{
+			//		await Task.Run(() => System.Threading.Thread.Sleep(951));
+			//		Tws.Add(new Tweet()
+			//		{
+			//			Name = "Name",
+			//			ScreenName = "name" + DateTime.Now.Millisecond % 10,
+			//			Text = new String('A', DateTime.Now.Millisecond % 140),
+			//			CreatedAt = DateTime.Now
+			//		});
+			//	}
+			//};
 
-			func();
+			//func();
 		}
-
-
-
-		
-
-		
-
-
-		private void Button_Click(object sender, RoutedEventArgs e)
-		{
-			Tws.Add(new Tweet()
-			{
-				Name = "Name",
-				ScreenName = "name" + DateTime.Now.Millisecond % 10,
-				Text = new String('A', DateTime.Now.Millisecond % 140),
-				CreatedAt = DateTime.Now
-			});
-		}
-
-		
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
@@ -128,8 +110,38 @@ namespace NPBtter
 				Properties.Settings.Default.AccessToken = tokens.AccessToken;
 				Properties.Settings.Default.AccessTokenSecret = tokens.AccessTokenSecret;
 				Properties.Settings.Default.Save();
+
+
+				// XmlSerializerを使ってファイルに保存（TwitSettingオブジェクトの内容を書き込む）
+				XmlSerializer serializer = new XmlSerializer(typeof(TweetSettings));
+
+				// カレントディレクトリに"settings.xml"というファイルで書き出す
+				FileStream fs = new FileStream(Directory.GetCurrentDirectory() + "\\" + "settings.xml", FileMode.Create);
+
+				// オブジェクトをシリアル化してXMLファイルに書き込む
+				serializer.Serialize(fs, this.TweetList.SubLists);
+				fs.Close();
 			}
 		}
+
+		
+
+		
+
+
+		private void Button_Click(object sender, RoutedEventArgs e)
+		{
+			TweetList.Add(new Tweet()
+			{
+				DisplayName = "Name @name" + DateTime.Now.Millisecond % 10,
+				Text = new String('A', DateTime.Now.Millisecond % 140),
+				CreatedAt = DateTime.Now
+			});
+		}
+
+		
+
+		
 
 		private void startMenu_Click(object sender, RoutedEventArgs e)
 		{
@@ -141,7 +153,7 @@ namespace NPBtter
 					stream.OfType<StatusMessage>()
 						.Select(message => message.Status)
 						.ObserveOn(SynchronizationContext.Current)
-						.Subscribe(status => this.Tws.Receive(status));
+						.Subscribe(status => this.TweetList.Receive(status));
 
 					this.conn = stream.Connect();
 					this.isStreaming = true;
@@ -160,7 +172,7 @@ namespace NPBtter
 			this.startMenu.Header = (isStreaming) ? "Stop" : "Start";
 		}
 
-		//private double borderWidth = SystemParameters.ResizeFrameVerticalBorderWidth * 2;
+		private double borderWidth = SystemParameters.ResizeFrameVerticalBorderWidth * 2;
 		private void viewMenu_Click(object sender, RoutedEventArgs e)
 		{
 			if(this.mainList.Visibility == System.Windows.Visibility.Hidden)
@@ -237,7 +249,7 @@ namespace NPBtter
 				var item = e.Data.GetData(typeof(ListBoxItem)) as ListBoxItem;
 				var tw = item.Content as Tweet;
 
-				this.Tws.SubLists[index].Entry(tw);
+				this.TweetList.SubLists[index].Entry(tw);
 			}
 		}
 		private void rightListBox_Drop(object sender, DragEventArgs e)
@@ -248,7 +260,7 @@ namespace NPBtter
 				var item = e.Data.GetData(typeof(ListBoxItem)) as ListBoxItem;
 				var tw = item.Content as Tweet;
 
-				this.Tws.SubLists[index].Entry(tw);
+				this.TweetList.SubLists[index].Entry(tw);
 			}
 		}
 
@@ -258,7 +270,7 @@ namespace NPBtter
 			int index = (sender as ComboBox).SelectedIndex;
 			if(index > -1)
 			{
-				this.leftListBox.ItemsSource = this.Tws.SubLists[index].Items;
+				this.leftListBox.ItemsSource = this.TweetList.SubLists[index].Items;
 			}
 		}
 
@@ -267,8 +279,32 @@ namespace NPBtter
 			int index = (sender as ComboBox).SelectedIndex;
 			if(index > -1)
 			{
-				this.rightListBox.ItemsSource = this.Tws.SubLists[index].Items;
+				this.rightListBox.ItemsSource = this.TweetList.SubLists[index].Items;
 			}
+		}
+
+
+		private void listBoxItem_MouseDoubleClick(object sender, RoutedEventArgs e)
+		{
+			var item = sender as ListBoxItem;
+			var tweet = item.Content as Tweet;
+			string url = "https://twitter.com/" + tweet.NameId + "/status/" + tweet.Id;
+			System.Diagnostics.Process.Start(url);
+		}
+
+		private void leftOptionButton_Click(object sender, RoutedEventArgs e)
+		{
+			var listMenu = new ListMenu(this.TweetList);
+			listMenu.Owner = this;
+			listMenu.ShowDialog();
+		}
+
+		private void rightOptionButton_Click(object sender, RoutedEventArgs e)
+		{
+			var listMenu = new ListMenu(this.TweetList);
+			listMenu.Owner = this;
+			listMenu.ShowDialog();
+
 		}
 
 		
@@ -398,179 +434,7 @@ namespace NPBtter
 	}
 
 
-	public class TweetList
-	{
-		public ObservableCollection<Tweet> Items { get; private set; }
-
-		public TweetList()
-		{
-			Items = new ObservableCollection<Tweet>();
-		}
-
-		virtual public void Add(Tweet tweet)
-		{
-			if(Items.Count > 10)
-			{
-				Items.Remove(Items.Last());
-			}
-
-			Items.Insert(0, tweet);
-		}
-
-	}
-
-	public class MainTweetList : TweetList
-	{
-		public ObservableCollection<SubTweetList> SubLists { get; private set; }
-
-		public MainTweetList()
-		{
-			SubLists = new ObservableCollection<SubTweetList>();
-		}
-
-		public void Receive(Status status)
-		{
-			Add(new Tweet(status));
-		}
-
-		override public void Add(Tweet tweet)
-		{
-			base.Add(tweet);
-
-			foreach(var subList in SubLists.Where(x => x.MatchFilter(tweet.ScreenName)))
-			{
-				subList.Add(tweet);
-			}
-		}
-	}
-
-	public class SubTweetList : TweetList, INotifyPropertyChanged
-	{
-		private string _Title;
-		private Dictionary<string, bool> _NameFilter;
-
-		public string Title
-		{
-			get { return _Title; }
-			set { _Title = value; OnPropertyChanged("DisplayTitle"); }
-		}
-
-		public string DisplayTitle
-		{
-			get { return _Title + " (" + _NameFilter.Count() + ")"; }
-		}
-
-
-		public SubTweetList()
-		{
-			_NameFilter = new Dictionary<string, bool>();
-		}
-		public SubTweetList(string title, IEnumerable<string> filter)
-		{
-			_Title = title;
-			_NameFilter = new Dictionary<string, bool>();
-			foreach(var name in filter)
-			{
-				_NameFilter.Add(name, true);
-			}
-		}
-
-		public bool MatchFilter(string screenName)
-		{
-			return _NameFilter.ContainsKey(screenName) && _NameFilter[screenName] == true;
-		}
-
-		public void Entry(Tweet tweet)
-		{
-			base.Add(tweet);
-
-			FilterEntry(tweet.ScreenName);
-		}
-
-		public void FilterEntry(string screenName)
-		{
-			_NameFilter[screenName] = true;
-			OnPropertyChanged("DisplayTitle");
-		}
-
-		public void FilterRemove(string screenName)
-		{
-			_NameFilter.Remove(screenName);
-			OnPropertyChanged("DisplayTitle");
-		}
-
-		public void FilterExclude(string screenName)
-		{
-			_NameFilter[screenName] = false;
-		}
-
-
-		// INotifyPropertyChangedの実装
-		public event PropertyChangedEventHandler PropertyChanged;
-		protected virtual void OnPropertyChanged(PropertyChangedEventArgs e)
-		{
-			if(PropertyChanged != null) PropertyChanged(this, e);
-		}
-		protected virtual void OnPropertyChanged(string name)
-		{
-			if(PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(name));
-		}
-	}
-
-	public class Tweet
-	{
-		public long Id { get; set; }
-		public string Name { get; set; }
-		public string ScreenName { get; set; }
-		public long? RtId { get; set; }
-		public string RtName { get; set; }
-		public string RtScreenName { get; set; }
-		public string Text { get; set; }
-		public DateTimeOffset CreatedAt { get; set; }
-		public Uri ProfileImageUrl { get; set; }
-
-		public string DisplayText
-		{
-			get
-			{
-				return Name + " / @" + ScreenName + "\n" + Text + "\n" + CreatedAt;
-			}
-		}
-
-
-		public Tweet()
-		{
-		}
-		public Tweet(Status status)
-		{
-			if(status.RetweetedStatus == null)
-			{
-				Id = status.Id;
-				Name = status.User.Name;
-				ScreenName = status.User.ScreenName;
-				RtId = null;
-				RtName = null;
-				RtScreenName = null;
-				Text = status.Text;
-				CreatedAt = status.CreatedAt;
-				ProfileImageUrl = status.User.ProfileImageUrl;
-			}
-			else
-			{
-				var rt = status.RetweetedStatus;
-
-				Id = rt.Id;
-				Name = rt.User.Name;
-				ScreenName = rt.User.ScreenName;
-				RtId = status.Id;
-				RtName = status.User.Name;
-				RtScreenName = status.User.ScreenName;
-				Text = rt.Text;
-				CreatedAt = rt.CreatedAt;
-				ProfileImageUrl = rt.User.ProfileImageUrl;
-			}
-			
-		}
+	
 		
-	}
+	
 }
